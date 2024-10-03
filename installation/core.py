@@ -24,11 +24,14 @@ from . import roitools
 
 try:
     from multiprocessing import Pool
+
     has_multiprocessing = True
 except ImportError:
-    warnings.warn('Multiprocessing library is not installed, using single ' +
-                  'core instead. To use multiprocessing install it by: ' +
-                  'pip install multiprocessing')
+    warnings.warn(
+        "Multiprocessing library is not installed, using single "
+        + "core instead. To use multiprocessing install it by: "
+        + "pip install multiprocessing"
+    )
     has_multiprocessing = False
 
 
@@ -71,8 +74,9 @@ def extract_func(inputs):
     # get neuropil masks and extract signals
     for cell in range(len(base_masks)):
         # neuropil masks
-        npil_masks = roitools.getmasks_npil(base_masks[cell], nNpil=nNpil,
-                                            expansion=expansion)
+        npil_masks = roitools.getmasks_npil(
+            base_masks[cell], nNpil=nNpil, expansion=expansion
+        )
         # add all current masks together
         masks = [base_masks[cell]] + npil_masks
 
@@ -80,7 +84,7 @@ def extract_func(inputs):
         data[cell] = datahandler.extracttraces(curdata, masks)
 
         # store ROI outlines
-        roi_polys[cell] = [''] * len(masks)
+        roi_polys[cell] = [""] * len(masks)
         for i in range(len(masks)):
             roi_polys[cell][i] = roitools.find_roi_edge(masks[i])
 
@@ -119,17 +123,27 @@ def separate_func(inputs):
         X, method, maxiter=20000, tol=1e-4, maxtries=1, alpha=alpha
     )
     ROInum = inputs[3]
-    print('Finished ROI number ' + str(ROInum))
+    print("Finished ROI number " + str(ROInum))
     return Xsep, Xmatch, Xmixmat, convergence
 
 
-class Experiment():
+class Experiment:
     """Does all the steps for FISSA."""
 
-    def __init__(self, images, rois, folder, nRegions=4,
-                 expansion=1, alpha=0.1, ncores_preparation=None,
-                 ncores_separation=None, method='nmf',
-                 lowmemory_mode=False, datahandler_custom=None):
+    def __init__(
+        self,
+        images,
+        rois,
+        folder,
+        nRegions=4,
+        expansion=1,
+        alpha=0.1,
+        ncores_preparation=None,
+        ncores_separation=None,
+        method="nmf",
+        lowmemory_mode=False,
+        datahandler_custom=None,
+    ):
         """Initialisation. Set the parameters for your Fissa instance.
 
         Parameters
@@ -200,23 +214,23 @@ class Experiment():
 
         """
         if isinstance(images, basestring):
-            self.images = sorted(glob.glob(os.path.join(images, '*.tif*')))
+            self.images = sorted(glob.glob(os.path.join(images, "*.tif*")))
         elif isinstance(images, collections.Sequence):
             self.images = images
         else:
-            raise ValueError('images should either be string or list')
+            raise ValueError("images should either be string or list")
 
         if isinstance(rois, basestring):
-            if rois[-3:] == 'zip':
+            if rois[-3:] == "zip":
                 self.rois = [rois] * len(self.images)
             else:
-                self.rois = sorted(glob.glob(os.path.join(rois, '*.zip')))
+                self.rois = sorted(glob.glob(os.path.join(rois, "*.zip")))
         elif isinstance(rois, collections.Sequence):
             self.rois = rois
             if len(rois) == 1:  # if only one roiset is specified
                 self.rois *= len(self.images)
         else:
-            raise ValueError('rois should either be string or list')
+            raise ValueError("rois should either be string or list")
         global datahandler
         if lowmemory_mode:
             from . import datahandler_framebyframe as datahandler
@@ -280,28 +294,33 @@ class Experiment():
 
         """
         # define filename where data will be present
-        fname = os.path.join(self.folder, 'preparation.npy')
+        fname = os.path.join(self.folder, "preparation.npy")
 
         # try to load data from filename
         if not redo:
             try:
                 nCell, raw, roi_polys = np.load(fname, allow_pickle=True)
-                print('Reloading previously prepared data...')
+                print("Reloading previously prepared data...")
             except BaseException:
                 redo = True
 
         if redo:
-            print('Doing region growing and data extraction....')
+            print("Doing region growing and data extraction....")
             # define inputs
             inputs = [0] * self.nTrials
             for trial in range(self.nTrials):
-                inputs[trial] = [self.images[trial], self.rois[trial],
-                                 self.nRegions, self.expansion]
+                inputs[trial] = [
+                    self.images[trial],
+                    self.rois[trial],
+                    self.nRegions,
+                    self.expansion,
+                ]
 
             # Check whether we should use multiprocessing
             use_multiprocessing = (
-                has_multiprocessing and self.nTrials > 1 and 
-                (self.ncores_preparation is None or self.ncores_preparation > 1)
+                has_multiprocessing
+                and self.nTrials > 1
+                and (self.ncores_preparation is None or self.ncores_preparation > 1)
             )
             # Do the extraction
             if use_multiprocessing and sys.version_info < (3, 0):
@@ -391,20 +410,19 @@ class Experiment():
             redo_sep = True
 
         # Define filename to store data in
-        fname = os.path.join(self.folder, 'separated.npy')
+        fname = os.path.join(self.folder, "separated.npy")
         if not redo_sep:
             try:
                 info, mixmat, sep, result = np.load(fname, allow_pickle=True)
-                print('Reloading previously separated data...')
+                print("Reloading previously separated data...")
             except BaseException:
                 redo_sep = True
 
         # separate data, if necessary
         if redo_sep:
-            print('Doing signal separation....')
+            print("Doing signal separation....")
             # predefine data structures
-            sep = [[None for t in range(self.nTrials)]
-                   for c in range(self.nCell)]
+            sep = [[None for t in range(self.nTrials)] for c in range(self.nCell)]
             result = np.copy(sep)
             mixmat = np.copy(sep)
             info = np.copy(sep)
@@ -417,17 +435,17 @@ class Experiment():
 
                 # check for below 0 values
                 if X.min() < 0:
-                    warnings.warn('Found values below zero in signal, ' +
-                                  'setting minimum to 0.')
+                    warnings.warn(
+                        "Found values below zero in signal, " + "setting minimum to 0."
+                    )
                     X -= X.min()
 
                 # update inputs
                 inputs[cell] = [X, self.alpha, self.method, cell]
 
             # Check whether we should use multiprocessing
-            use_multiprocessing = (
-                has_multiprocessing and
-                (self.ncores_separation is None or self.ncores_separation > 1)
+            use_multiprocessing = has_multiprocessing and (
+                self.ncores_separation is None or self.ncores_separation > 1
             )
             # Do the extraction
             if use_multiprocessing and sys.version_info < (3, 0):
@@ -495,8 +513,7 @@ class Experiment():
             Default is `True`.
 
         """
-        deltaf_raw = [[None for t in range(self.nTrials)]
-                      for c in range(self.nCell)]
+        deltaf_raw = [[None for t in range(self.nTrials)] for c in range(self.nCell)]
         deltaf_result = np.copy(deltaf_raw)
 
         # loop over cells
@@ -510,9 +527,7 @@ class Experiment():
                 # calculate deltaf/f0
                 raw_f0 = deltaf.findBaselineF0(raw_conc, freq)
                 raw_conc = (raw_conc - raw_f0) / raw_f0
-                result_f0 = deltaf.findBaselineF0(
-                    result_conc, freq, 1
-                ).T[:, None]
+                result_f0 = deltaf.findBaselineF0(result_conc, freq, 1).T[:, None]
                 if use_raw_f0:
                     result_conc = (result_conc - result_f0) / raw_f0
                 else:
@@ -536,9 +551,7 @@ class Experiment():
 
                     # calculate deltaf/fo
                     raw_f0 = deltaf.findBaselineF0(raw_sig, freq)
-                    result_f0 = deltaf.findBaselineF0(
-                        result_sig, freq, 1
-                    ).T[:, None]
+                    result_f0 = deltaf.findBaselineF0(result_sig, freq, 1).T[:, None]
                     result_f0[result_f0 < 0] = 0
                     raw_sig = (raw_sig - raw_f0) / raw_f0
                     if use_raw_f0:
@@ -574,7 +587,7 @@ class Experiment():
         - `raw.cell0.trial0(2,:)` raw signal from first neuropil region
         """
         # define filename
-        fname = os.path.join(self.folder, 'matlab.mat')
+        fname = os.path.join(self.folder, "matlab.mat")
 
         # initialize dictionary to save
         M = collections.OrderedDict()
@@ -584,22 +597,22 @@ class Experiment():
             # loop over cells and trial
             for cell in range(self.nCell):
                 # get current cell label
-                c_lab = 'cell' + str(cell)
+                c_lab = "cell" + str(cell)
                 # update dictionary
                 new_dict[c_lab] = collections.OrderedDict()
                 for trial in range(self.nTrials):
                     # get current trial label
-                    t_lab = 'trial' + str(trial)
+                    t_lab = "trial" + str(trial)
                     # update dictionary
                     new_dict[c_lab][t_lab] = orig_dict[cell][trial]
             return new_dict
 
-        M['ROIs'] = reformat_dict_for_matlab(self.roi_polys)
-        M['raw'] = reformat_dict_for_matlab(self.raw)
-        M['result'] = reformat_dict_for_matlab(self.result)
-        if getattr(self, 'deltaf_raw', None) is not None:
-            M['df_raw'] = reformat_dict_for_matlab(self.deltaf_raw)
-        if getattr(self, 'deltaf_result', None) is not None:
-            M['df_result'] = reformat_dict_for_matlab(self.deltaf_result)
+        M["ROIs"] = reformat_dict_for_matlab(self.roi_polys)
+        M["raw"] = reformat_dict_for_matlab(self.raw)
+        M["result"] = reformat_dict_for_matlab(self.result)
+        if getattr(self, "deltaf_raw", None) is not None:
+            M["df_raw"] = reformat_dict_for_matlab(self.deltaf_raw)
+        if getattr(self, "deltaf_result", None) is not None:
+            M["df_result"] = reformat_dict_for_matlab(self.deltaf_result)
 
         savemat(fname, M)
