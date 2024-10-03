@@ -15,8 +15,17 @@ from sklearn.decomposition import FastICA, NMF, PCA
 
 
 def separate(
-        S, sep_method='nmf', n=None, maxiter=10000, tol=1e-4,
-        random_state=892, maxtries=10, W0=None, H0=None, alpha=0.1):
+    S,
+    sep_method="nmf",
+    n=None,
+    maxiter=10000,
+    tol=1e-4,
+    random_state=892,
+    maxtries=10,
+    W0=None,
+    H0=None,
+    alpha=0.1,
+):
     """For the signals in S, finds the independent signals underlying it,
     using ica or nmf.
 
@@ -98,7 +107,7 @@ def separate(
 
     # estimate number of signals to find, if not given
     if n is None:
-        if sep_method == 'ica':
+        if sep_method == "ica":
             # Perform PCA
             pca = PCA(whiten=False)
             pca.fit(S.T)
@@ -108,14 +117,19 @@ def separate(
         else:
             n = S.shape[0]
 
-    if sep_method == 'ica':
+    if sep_method == "ica":
         # Use sklearn's implementation of ICA.
 
         for ith_try in range(maxtries):
             # Make an instance of the FastICA class. We can do whitening of
             # the data now.
-            ica = FastICA(n_components=n, whiten=True, max_iter=maxiter,
-                          tol=tol, random_state=random_state)
+            ica = FastICA(
+                n_components=n,
+                whiten=True,
+                max_iter=maxiter,
+                tol=tol,
+                random_state=random_state,
+            )
 
             # Perform ICA and find separated signals
             S_sep = ica.fit_transform(S.T)
@@ -126,23 +140,27 @@ def separate(
                 #     'ICA converged after {} iterations.'
                 # ).format(ica.n_iter_))
                 break
-            print((
-                'Attempt {} failed to converge at {} iterations.'
-            ).format(ith_try + 1, ica.n_iter_))
+            print(
+                ("Attempt {} failed to converge at {} iterations.").format(
+                    ith_try + 1, ica.n_iter_
+                )
+            )
             if ith_try + 1 < maxtries:
-                print('Trying a new random state.')
+                print("Trying a new random state.")
                 # Change to a new random_state
                 random_state = rand.randint(8000)
 
         if ica.n_iter_ == maxiter:
-            print((
-                'Warning: maximum number of allowed tries reached at {} '
-                'iterations for {} tries of different random seed states.'
-            ).format(ica.n_iter_, ith_try + 1))
+            print(
+                (
+                    "Warning: maximum number of allowed tries reached at {} "
+                    "iterations for {} tries of different random seed states."
+                ).format(ica.n_iter_, ith_try + 1)
+            )
 
         A_sep = ica.mixing_
 
-    elif sep_method == 'nmf':
+    elif sep_method == "nmf":
         for ith_try in range(maxtries):
             # nSignals = nRegions +1
             # ICA = FastICA(n_components=nSignals)
@@ -154,18 +172,28 @@ def separate(
             # Make an instance of the sklearn NMF class
             if W0 is None and H0 is None:
                 nmf = NMF(
-                    init='nndsvdar', n_components=n,
-                    alpha=alpha, l1_ratio=0.5,
-                    tol=tol, max_iter=maxiter, random_state=random_state)
+                    init="nndsvdar",
+                    n_components=n,
+                    alpha=alpha,
+                    l1_ratio=0.5,
+                    tol=tol,
+                    max_iter=maxiter,
+                    random_state=random_state,
+                )
 
                 # Perform NMF and find separated signals
                 S_sep = nmf.fit_transform(S.T)
 
             else:
                 nmf = NMF(
-                    init='custom', n_components=n,
-                    alpha=alpha, l1_ratio=0.5,
-                    tol=tol, max_iter=maxiter, random_state=random_state)
+                    init="custom",
+                    n_components=n,
+                    alpha=alpha,
+                    l1_ratio=0.5,
+                    tol=tol,
+                    max_iter=maxiter,
+                    random_state=random_state,
+                )
 
                 # Perform NMF and find separated signals
                 S_sep = nmf.fit_transform(S.T, W=W0, H=H0)
@@ -176,19 +204,23 @@ def separate(
                 #     'NMF converged after {} iterations.'
                 # ).format(nmf.n_iter_ + 1))
                 break
-            print((
-                'Attempt {} failed to converge at {} iterations.'
-            ).format(ith_try, nmf.n_iter_ + 1))
+            print(
+                ("Attempt {} failed to converge at {} iterations.").format(
+                    ith_try, nmf.n_iter_ + 1
+                )
+            )
             if ith_try + 1 < maxtries:
-                print('Trying a new random state.')
+                print("Trying a new random state.")
                 # Change to a new random_state
                 random_state = rand.randint(8000)
 
         if nmf.n_iter_ == maxiter - 1:
-            print((
-                'Warning: maximum number of allowed tries reached at {} '
-                'iterations for {} tries of different random seed states.'
-            ).format(nmf.n_iter_ + 1, ith_try + 1))
+            print(
+                (
+                    "Warning: maximum number of allowed tries reached at {} "
+                    "iterations for {} tries of different random seed states."
+                ).format(nmf.n_iter_ + 1, ith_try + 1)
+            )
 
         A_sep = nmf.components_.T
 
@@ -220,15 +252,15 @@ def separate(
 
     # save the algorithm convergence info
     convergence = {}
-    convergence['max_iterations'] = maxiter
-    if sep_method == 'ica':
-        convergence['random_state'] = random_state
-        convergence['iterations'] = ica.n_iter_
-        convergence['converged'] = not ica.n_iter_ == maxiter
-    elif sep_method == 'nmf':
-        convergence['random_state'] = random_state
-        convergence['iterations'] = nmf.n_iter_
-        convergence['converged'] = not nmf.n_iter_ == maxiter
+    convergence["max_iterations"] = maxiter
+    if sep_method == "ica":
+        convergence["random_state"] = random_state
+        convergence["iterations"] = ica.n_iter_
+        convergence["converged"] = not ica.n_iter_ == maxiter
+    elif sep_method == "nmf":
+        convergence["random_state"] = random_state
+        convergence["iterations"] = nmf.n_iter_
+        convergence["converged"] = not nmf.n_iter_ == maxiter
 
     # scale back to raw magnitudes
     S_matched *= median
@@ -237,7 +269,7 @@ def separate(
 
 
 def lowPassFilter(F, fs=40, nfilt=40, fw_base=10, axis=0):
-    '''Low pass filters a fluorescence imaging trace line.
+    """Low pass filters a fluorescence imaging trace line.
 
     Parameters
     ----------
@@ -256,13 +288,13 @@ def lowPassFilter(F, fs=40, nfilt=40, fw_base=10, axis=0):
     -------
     numpy.ndarray
         Low pass filtered signal with the same shape as `F`.
-    '''
+    """
     # The Nyquist rate of the signal is half the sampling frequency
     nyq_rate = fs / 2.0
 
     # Make a set of weights to use with our taps.
     # We use an FIR filter with a Hamming window.
-    b = signal.firwin(nfilt, cutoff=fw_base / nyq_rate, window='hamming')
+    b = signal.firwin(nfilt, cutoff=fw_base / nyq_rate, window="hamming")
 
     # Use lfilter to filter with the FIR filter.
     # We filter along the second dimension because that represents time

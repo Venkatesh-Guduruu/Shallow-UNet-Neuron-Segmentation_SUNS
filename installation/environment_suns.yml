@@ -22,3 +22,4 @@ dependencies:
     - pyfftw
     - tensorflow-estimator==1.15.1
     - py-cpuinfo
+    - torch==1.12.1
